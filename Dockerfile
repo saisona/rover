@@ -10,6 +10,7 @@ COPY ./ui/package.json ./
 COPY ./ui/babel.config.js ./
 # Set Progress, Config and install
 RUN npm set progress=false && npm config set depth 0 && npm install
+# RUN npm install
 # Copy source
 # Copy Specific Directories
 COPY ./ui/public ./public

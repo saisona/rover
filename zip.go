@@ -30,20 +30,21 @@ func (r *rover) generateZip(fe fs.FS, filename string) error {
 
 	for _, feItem := range feItems {
 		if !feItem.IsDir() {
-			if err = AddEmbeddedToZip(fe, zipWriter, feItem.Name()); err != nil {
-				return err
+			if errAddEmbeddedToZip := AddEmbeddedToZip(fe, zipWriter, feItem.Name()); errAddEmbeddedToZip != nil {
+				return errAddEmbeddedToZip
 			}
 			continue
 		}
 
 		// Iterate through subdirectories (ui/dist/*)
-		feSubItems, err := fs.ReadDir(fe, feItem.Name())
-		if err != nil {
-			return err
-		}
-		for _, feSubItem := range feSubItems {
-			if err = AddEmbeddedToZip(fe, zipWriter, fmt.Sprintf("%s/%s", feItem.Name(), feSubItem.Name())); err != nil {
-				return err
+
+		if feSubItems, errReadDir := fs.ReadDir(fe, feItem.Name()); errReadDir != nil {
+			return errReadDir
+		} else {
+			for _, feSubItem := range feSubItems {
+				if errReadDir = AddEmbeddedToZip(fe, zipWriter, fmt.Sprintf("%s/%s", feItem.Name(), feSubItem.Name())); errReadDir != nil {
+					return errReadDir
+				}
 			}
 		}
 	}
@@ -75,36 +76,50 @@ func AddEmbeddedToZip(fe fs.FS, zipWriter *zip.Writer, filename string) error {
 
 	// Rename standalone to index.html references from absolute to relative
 	if filename == "index.html" {
-		curContent, err := fs.ReadFile(fe, filename)
-		if err != nil {
-			return err
+		curContent, errReadFile := fs.ReadFile(fe, filename)
+		if errReadFile != nil {
+			return errReadFile
 		}
 
 		contents := strings.Split(string(curContent), "</head>")
 		// Add js files, workaround since CORS error if you try to do getJSON
-		content := fmt.Sprintf("%s%s%s", contents[0], `<script type="text/javascript" language="javascript" src="./map.js"></script>
+		content := fmt.Sprintf(
+			"%s%s%s",
+			contents[0],
+			`<script type="text/javascript" language="javascript" src="./map.js"></script>
 		<script type="text/javascript" language="javascript" src="./rso.js"></script>
-		<script type="text/javascript" language="javascript" src="./graph.js"></script>`, contents[1])
+		<script type="text/javascript" language="javascript" src="./graph.js"></script>`,
+			contents[1],
+		)
 		content = strings.ReplaceAll(content, "=\"/", "=\"./")
 
-		tempFileName, tempFile, err := createTempFile("temp-index.html", []byte(content))
+		tempFileName, tempFile, errCreateTempFile := createTempFile(
+			"temp-index.html",
+			[]byte(content),
+		)
+		if errCreateTempFile != nil {
+			return errCreateTempFile
+		}
 		defer os.Remove(tempFile.Name()) // clean up
 		defer tempFile.Close()
 
-		fileToZip, err = os.Open(tempFileName)
-		if err != nil {
-			return err
+		fileToZip, errReadFile = os.Open(tempFileName)
+		if errReadFile != nil {
+			return errReadFile
 		}
 		defer fileToZip.Close()
 	} else if strings.HasSuffix(filename, ".js") {
-		curContent, err := fs.ReadFile(fe, filename)
-		if err != nil {
-			return err
+		curContent, errReadFile := fs.ReadFile(fe, filename)
+		if errReadFile != nil {
+			return errReadFile
 		}
 
 		rawContent := bytes.ReplaceAll(curContent, []byte("r.p+\""), []byte("\"./"))
 
-		tempFileName, tempFile, err := createTempFile("temp-index.html", rawContent)
+		tempFileName, tempFile, errCreateTmpFile := createTempFile("temp-index.html", rawContent)
+		if errCreateTmpFile != nil {
+			return errCreateTmpFile
+		}
 		defer os.Remove(tempFile.Name()) // clean up
 		defer tempFile.Close()
 
@@ -136,13 +151,16 @@ func AddFileToZip(zipWriter *zip.Writer, fileType string, j interface{}) error {
 
 	b, err := json.Marshal(j)
 	if err != nil {
-		return fmt.Errorf("error producing JSON: %s\n", err)
+		return fmt.Errorf("error producing JSON: %s", err)
 	}
 
 	// add syntax to make json file a js object
 	content := fmt.Sprintf("const %s = %s", fileType, string(b))
 
-	tempFileName, tempFile, err := createTempFile(filename, []byte(content))
+	tempFileName, tempFile, errCreateTmpFile := createTempFile(filename, []byte(content))
+	if errCreateTmpFile != nil {
+		return errCreateTmpFile
+	}
 	defer os.Remove(tempFile.Name()) // clean up
 	defer tempFile.Close()
 

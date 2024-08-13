@@ -11,8 +11,10 @@ import (
 	tfjson "github.com/hashicorp/terraform-json"
 )
 
-type Action string
-type ResourceType string
+type (
+	Action       string
+	ResourceType string
+)
 
 const (
 	ResourceTypeFile     ResourceType = "file"
@@ -84,7 +86,6 @@ type ModuleCall struct {
 }
 
 func (r *rover) GenerateModuleMap(parent *Resource, parentModule string) {
-
 	childIndex := regexp.MustCompile(`\[[^[\]]*\]$`)
 	matchBrackets := regexp.MustCompile(`\[[^\[\]]*\]`)
 
@@ -157,8 +158,9 @@ func (r *rover) GenerateModuleMap(parent *Resource, parentModule string) {
 
 	for id, rs := range states[parentModule].Children {
 
-		configId := matchBrackets.ReplaceAllString(id, "")
-		configured := configs[parentConfig] != nil && configs[parentConfig].Module != nil && configs[configId] != nil // If there is configuration for filenames, lines, etc.
+		configID := matchBrackets.ReplaceAllString(id, "")
+		configured := configs[parentConfig] != nil && configs[parentConfig].Module != nil &&
+			configs[configID] != nil // If there is configuration for filenames, lines, etc.
 
 		re := &Resource{
 			Type:     rs.Type,
@@ -173,9 +175,10 @@ func (r *rover) GenerateModuleMap(parent *Resource, parentModule string) {
 			}
 		}
 
-		if rs.Type == ResourceTypeResource || rs.Type == ResourceTypeData {
-			re.ResourceType = configs[configId].ResourceConfig.Type
-			re.Name = configs[configId].ResourceConfig.Name
+		switch rs.Type {
+		case ResourceTypeResource, ResourceTypeData:
+			re.ResourceType = configs[configID].ResourceConfig.Type
+			re.Name = configs[configID].ResourceConfig.Name
 
 			for crName, cr := range states[id].Children {
 
@@ -188,7 +191,10 @@ func (r *rover) GenerateModuleMap(parent *Resource, parentModule string) {
 				}
 
 				if rs.Type == ResourceTypeData {
-					tcr.Name = strings.TrimPrefix(crName, fmt.Sprintf("%sdata.%s.", prefix, re.ResourceType))
+					tcr.Name = strings.TrimPrefix(
+						crName,
+						fmt.Sprintf("%sdata.%s.", prefix, re.ResourceType),
+					)
 				} else {
 					tcr.Name = strings.TrimPrefix(crName, fmt.Sprintf("%s%s.", prefix, re.ResourceType))
 				}
@@ -213,9 +219,12 @@ func (r *rover) GenerateModuleMap(parent *Resource, parentModule string) {
 					ind = fmt.Sprintf("data.%s", ind)
 				}
 
-				if rs.Type == ResourceTypeData && configs[parentConfig].Module.DataResources[ind] != nil {
+				if rs.Type == ResourceTypeData &&
+					configs[parentConfig].Module.DataResources[ind] != nil {
 
-					fname = filepath.Base(configs[parentConfig].Module.DataResources[ind].Pos.Filename)
+					fname = filepath.Base(
+						configs[parentConfig].Module.DataResources[ind].Pos.Filename,
+					)
 					re.Line = &configs[parentConfig].Module.DataResources[ind].Pos.Line
 
 					r.AddFileIfNotExists(parent, parentModule, fname)
@@ -239,15 +248,17 @@ func (r *rover) GenerateModuleMap(parent *Resource, parentModule string) {
 				}
 
 			} else {
-
 				parent.Children[id] = re
 			}
 
-		} else if rs.Type == ResourceTypeModule {
+		case ResourceTypeModule:
 			re.Name = strings.Split(id, ".")[len(strings.Split(id, "."))-1]
 
-			if configured && !childIndex.MatchString(id) && configs[parentConfig].Module.ModuleCalls[matchBrackets.ReplaceAllString(re.Name, "")] != nil {
-				fname := filepath.Base(configs[parentConfig].Module.ModuleCalls[matchBrackets.ReplaceAllString(re.Name, "")].Pos.Filename)
+			if configured && !childIndex.MatchString(id) &&
+				configs[parentConfig].Module.ModuleCalls[matchBrackets.ReplaceAllString(re.Name, "")] != nil {
+				fname := filepath.Base(
+					configs[parentConfig].Module.ModuleCalls[matchBrackets.ReplaceAllString(re.Name, "")].Pos.Filename,
+				)
 				re.Line = &configs[parentConfig].Module.ModuleCalls[matchBrackets.ReplaceAllString(re.Name, "")].Pos.Line
 
 				r.AddFileIfNotExists(parent, parentModule, fname)
@@ -263,15 +274,17 @@ func (r *rover) GenerateModuleMap(parent *Resource, parentModule string) {
 		}
 
 		// Add locals
-		if configs[configId] != nil && !(re.Type == ResourceTypeModule && childIndex.MatchString(id)) {
+		if configs[configID] != nil &&
+			(re.Type != ResourceTypeModule || !childIndex.MatchString(id)) {
 			expressions := map[string]*tfjson.Expression{}
 
-			if re.Type == ResourceTypeResource {
-				expressions = configs[configId].ResourceConfig.Expressions
-			} else if re.Type == ResourceTypeModule {
-				expressions = configs[configId].ModuleConfig.Expressions
-			} else if re.Type == ResourceTypeOutput {
-				expressions["exp"] = configs[configId].OutputConfig.Expression
+			switch re.Type {
+			case ResourceTypeResource:
+				expressions = configs[configID].ResourceConfig.Expressions
+			case ResourceTypeModule:
+				expressions = configs[configID].ModuleConfig.Expressions
+			case ResourceTypeOutput:
+				expressions["exp"] = configs[configID].OutputConfig.Expression
 			}
 
 			// Add locals
@@ -290,7 +303,6 @@ func (r *rover) GenerateModuleMap(parent *Resource, parentModule string) {
 
 						} else {
 							parent.Children[rid] = ref
-
 						}
 					}
 				}
@@ -301,9 +313,7 @@ func (r *rover) GenerateModuleMap(parent *Resource, parentModule string) {
 }
 
 func (r *rover) AddFileIfNotExists(module *Resource, parentModule string, fname string) {
-
 	if _, ok := module.Children[fname]; !ok {
-
 		module.Children[fname] = &Resource{
 			Type:     ResourceTypeFile,
 			Name:     fname,
