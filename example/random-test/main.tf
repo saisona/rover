@@ -10,7 +10,8 @@ terraform {
 provider "random" {}
 
 variable "max_length" {
-  default = 5
+  type      = number
+  default   = 5
   sensitive = false
 }
 
@@ -33,7 +34,7 @@ resource "random_pet" "bird" {
 }
 
 resource "random_pet" "dogs" {
-  count = 3
+  count  = 3
   length = random_integer.pet_length.result
 }
 
@@ -49,22 +50,22 @@ module "random_cat" {
 
 output "random_cat_name" {
   description = "random_cat_name"
-  value = module.random_cat.random_name
-  sensitive = true
+  value       = module.random_cat.random_name
+  sensitive   = true
 }
 
 output "random_cow_name" {
   description = "random_cow_name"
-  value = random_pet.cow.id
+  value       = random_pet.cow.id
 }
 
 resource "random_pet" "birds" {
   for_each = {
     "billy" = 1
-    "bob" = 2
-    "jill" = 3
+    "bob"   = 2
+    "jill"  = 3
   }
-  
+
   prefix = each.key
   length = each.value
 }
@@ -80,5 +81,6 @@ data "http" "terraform_metadata" {
 
 output "terraform_metadata" {
   description = "Terraform metadata"
-  value = data.http.terraform_metadata.body
+  value       = data.http.terraform_metadata.body
 }
+

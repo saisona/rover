@@ -1,5 +1,6 @@
 
 variable "max_length" {
+  type    = number
   default = 5
 }
 
@@ -15,3 +16,4 @@ resource "random_pet" "pet" {
 output "random_name" {
   value = random_pet.pet.id
 }
+

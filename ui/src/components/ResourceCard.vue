@@ -126,12 +126,11 @@ export default {
     sortedResources() {
       // Sort by line number
       if (this.content.children) {
-
         const sorted = Object.entries(this.content.children).sort(
           (x, y) => x[1].line - y[1].line
         );
 
-        return sorted
+        return sorted;
       }
       return null;
     },

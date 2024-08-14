@@ -10,7 +10,7 @@
 <script>
 import { saveAs } from "file-saver";
 import klay from "cytoscape-klay";
-import svg from 'cytoscape-svg';
+import svg from "cytoscape-svg";
 import nodeHtmlLabel from "cytoscape-node-html-label";
 import axios from "axios";
 
@@ -400,7 +400,7 @@ export default {
         var n = event.target;
 
         let node = { id: n.data().id, in: [], out: [] };
-        
+
         const ce = n.connectedEdges();
         for (let i = 0; i < ce.length; i += 1) {
           let ed = ce[i].data();
@@ -482,10 +482,11 @@ export default {
     },
     saveGraph: function () {
       let cy = this.$refs.cy.instance;
-      var svgContent = cy.svg({scale: 0.1, full: true});
-			var blob = new Blob([svgContent], {type:"image/svg+xml;charset=utf-8"});
-			saveAs(blob, "rover.svg");
-			
+      var svgContent = cy.svg({ scale: 0.1, full: true });
+      var blob = new Blob([svgContent], {
+        type: "image/svg+xml;charset=utf-8",
+      });
+      saveAs(blob, "rover.svg");
     },
     runLayouts: function () {
       let cy = this.$refs.cy.instance;
@@ -613,7 +614,6 @@ export default {
   border: 0;
 }
 </style>
-
 
 <style scoped>
 fieldset {

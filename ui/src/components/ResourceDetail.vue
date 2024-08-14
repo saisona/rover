@@ -173,7 +173,9 @@ export default {
       return val ? val : "null";
     },
     getResourceConfig(resourceID, model, isChild) {
-      let configID = model.states[resourceID]?.config_id ? model.states[resourceID]?.config_id : resourceID.replace(/\[[^[\]]*\]/g, "");
+      let configID = model.states[resourceID]?.config_id
+        ? model.states[resourceID]?.config_id
+        : resourceID.replace(/\[[^[\]]*\]/g, "");
 
       let config;
 
@@ -200,7 +202,6 @@ export default {
 
       return {};
 
-      
       // Resource
       /*if (isChild) return { isChild: "rover-for-each-child-resource-true" };
       if (model.resources[resourceID] && model.resources[resourceID].config) {
@@ -350,9 +351,11 @@ export default {
       return this.resource.id.includes("var.");
     },
     resourceConfig() {
-
-
-      return this.getResourceConfig(this.resource.id, this.overview, this.isChild)
+      return this.getResourceConfig(
+        this.resource.id,
+        this.overview,
+        this.isChild
+      );
 
       /*if (this.resource.id === "") {
         return { action: "", before: {} };
@@ -382,9 +385,7 @@ export default {
       // return this.isChild;*/
     },
     resourceChange() {
-
       return this.getResourceChange(this.resource.id, this.overview);
-
     },
   },
   watch: {
